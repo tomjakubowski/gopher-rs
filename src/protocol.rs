@@ -1,27 +1,53 @@
 #![allow(dead_code, unused_variables)]
 
+use std::fmt;
 use std::io::{Reader, IoResult};
 
 #[repr(u8)]
-#[deriving(Show, PartialEq, Eq, FromPrimitive)]
+#[deriving(PartialEq, Eq, FromPrimitive)]
 pub enum KnownDirEntity {
     File = b'0',
     Dir  = b'1',
-    CsoPhoneBook = b'2',
+    CsoQuery = b'2',
     Error = b'3',
     MacBinHex = b'4',
     DosBin = b'5',
     Uuenc = b'6',
-    IndexSearch = b'7',
+    SearchQuery = b'7',
     Telnet = b'8',
     Binary = b'9',
     RedundantServer = b'+',
     Tn3270 = b'T',
     Gif = b'g',
+    Html = b'h',
+    Info = b'i',
     Image = b'I'
 }
 
-#[deriving(Show, PartialEq, Eq)]
+impl fmt::Show for KnownDirEntity {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.pad(match *self {
+            KnownDirEntity::File => "file",
+            KnownDirEntity::Dir  => "dir",
+            KnownDirEntity::CsoQuery => "cso",
+            KnownDirEntity::Error => "err",
+            KnownDirEntity::MacBinHex => "binhex",
+            KnownDirEntity::DosBin => "dosbin",
+            KnownDirEntity::Uuenc => "uuenc",
+            KnownDirEntity::SearchQuery => "search",
+            KnownDirEntity::Telnet => "tel",
+            KnownDirEntity::Binary => "bin",
+            KnownDirEntity::RedundantServer => "server",
+            KnownDirEntity::Tn3270 => "tn3270",
+            KnownDirEntity::Gif => "gif",
+            KnownDirEntity::Html => "html",
+            KnownDirEntity::Info => "info",
+            KnownDirEntity::Image => "img",
+        })
+    }
+}
+
+#[deriving(PartialEq, Eq)]
 pub enum DirEntityKind {
     Known(KnownDirEntity),
     Unknown(u8)
@@ -36,7 +62,19 @@ impl DirEntityKind {
     }
 }
 
-#[deriving(Show, PartialEq, Eq)]
+impl fmt::Show for DirEntityKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            DirEntityKind::Known(k) => k.fmt(f),
+            DirEntityKind::Unknown(b) => {
+                try!(f.pad("? "));
+                b.fmt(f)
+            }
+        }
+    }
+}
+
+#[deriving(PartialEq, Eq)]
 pub struct DirEntity {
     kind: DirEntityKind,
     // FIXME: RFC 1436 allows (but does not recommend) Latin1 for this field, so
@@ -48,11 +86,17 @@ pub struct DirEntity {
     port: u16
 }
 
+impl fmt::Show for DirEntity {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{:>6}] {}", self.kind, self.display)
+    }
+}
+
 /// Parses the Gopher protocol.
 pub struct Parser<'a> {
     reader: Box<Reader + 'a>,
     lookahead: Option<u8>,
-    byte: u8
+    byte: u8,
 }
 
 // utility function to convert ASCII bytes to a String
@@ -68,7 +112,7 @@ impl<'a> Parser<'a> {
         let mut parser = Parser {
             reader: box reader as Box<Reader>,
             lookahead: None,
-            byte: 0
+            byte: 0,
         };
         try!(parser.bump());
         Ok(parser)
