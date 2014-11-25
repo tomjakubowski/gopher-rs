@@ -1,0 +1,5 @@
+[package]
+
+name = "gopher"
+version = "0.0.1"
+authors = ["Tom Jakubowski <tom@crystae.net>"]
