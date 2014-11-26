@@ -4,7 +4,7 @@ use std::fmt;
 use std::io::{Reader, IoResult};
 
 #[repr(u8)]
-#[deriving(PartialEq, Eq, FromPrimitive)]
+#[deriving(Show, PartialEq, Eq, FromPrimitive)]
 pub enum KnownDirEntity {
     File = b'0',
     Dir  = b'1',
@@ -24,30 +24,7 @@ pub enum KnownDirEntity {
     Image = b'I'
 }
 
-impl fmt::Show for KnownDirEntity {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(match *self {
-            KnownDirEntity::File => "file",
-            KnownDirEntity::Dir  => "dir",
-            KnownDirEntity::CsoQuery => "cso",
-            KnownDirEntity::Error => "err",
-            KnownDirEntity::MacBinHex => "binhex",
-            KnownDirEntity::DosBin => "dosbin",
-            KnownDirEntity::Uuenc => "uuenc",
-            KnownDirEntity::SearchQuery => "search",
-            KnownDirEntity::Telnet => "tel",
-            KnownDirEntity::Binary => "bin",
-            KnownDirEntity::RedundantServer => "server",
-            KnownDirEntity::Tn3270 => "tn3270",
-            KnownDirEntity::Gif => "gif",
-            KnownDirEntity::Html => "html",
-            KnownDirEntity::Info => "info",
-            KnownDirEntity::Image => "img",
-        })
-    }
-}
-
-#[deriving(PartialEq, Eq)]
+#[deriving(Show, PartialEq, Eq)]
 pub enum DirEntityKind {
     Known(KnownDirEntity),
     Unknown(u8)
@@ -62,34 +39,16 @@ impl DirEntityKind {
     }
 }
 
-impl fmt::Show for DirEntityKind {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            DirEntityKind::Known(k) => k.fmt(f),
-            DirEntityKind::Unknown(b) => {
-                try!(f.pad("? "));
-                b.fmt(f)
-            }
-        }
-    }
-}
-
-#[deriving(PartialEq, Eq)]
+#[deriving(Show, PartialEq, Eq)]
 pub struct DirEntity {
-    kind: DirEntityKind,
+    pub kind: DirEntityKind,
     // FIXME: RFC 1436 allows (but does not recommend) Latin1 for this field, so
     // this should support that
-    display: String,
+    pub display: String,
     // Might be 0-length.
-    selector: Vec<u8>,
-    host: String,
-    port: u16
-}
-
-impl fmt::Show for DirEntity {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[{:>6}] {}", self.kind, self.display)
-    }
+    pub selector: Vec<u8>,
+    pub host: String,
+    pub port: u16
 }
 
 /// Parses the Gopher protocol.
