@@ -1,15 +1,15 @@
-#![feature(globs)]
+#![feature(globs, if_let)]
 
 extern crate gopher;
 
-use gopher::{DirEntity, KnownDirEntity, DirEntityKind};
+use gopher::DirEntity;
 use gopher::client::Gopher;
 
 use std::io::IoResult;
 
 fn pretty_print(item: &DirEntity) {
-    use gopher::DirEntityKind::{Known, Unknown};
-    use gopher::KnownDirEntity::*;
+    use gopher::EntityKind::{Known, Unknown};
+    use gopher::KnownEntityKind::*;
 
     let kind = match item.kind {
         Known(File) => "file",
@@ -28,17 +28,22 @@ fn pretty_print(item: &DirEntity) {
         Known(Html) => "html",
         Known(Info) => "info",
         Known(Image) => "img",
-        Unknown(c) => "?"
+        Unknown(_) => "?"
     };
     println!("[{:>6}] {}", kind, item.display);
 }
 
 fn stuff() -> IoResult<()> {
     let gopher = Gopher::new("freeshell.org", 70);
-    let menu = try!(gopher.menu());
-    for x in menu.iter() {
-        pretty_print(x);
+    let menu = try!(gopher.root());
+
+    if let Some(dir) = menu.iter().find(|&x| x.is_dir()) {
+        println!("found dir, path = {}", String::from_utf8_lossy(&*dir.selector));
+        for x in try!(gopher.fetch_dir(&*dir.selector)).iter() {
+            pretty_print(x);
+        }
     }
+
     Ok(())
 }
 

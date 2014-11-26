@@ -21,12 +21,22 @@ impl Gopher {
     }
 
     /// List all entries at the root of the server.
-    pub fn menu(&self) -> IoResult<Vec<DirEntity>> {
+    pub fn root(&self) -> IoResult<Vec<DirEntity>> {
+        self.fetch_dir(&[])
+    }
+
+    /// Given a selector, fetches a directory listing
+    pub fn fetch_dir(&self, selector: &[u8]) -> IoResult<Vec<DirEntity>> {
         use std::io::BufferedReader;
 
-        let mut stream = try!(TcpStream::connect((self.host.as_slice(), self.port)));
+        let mut stream = try!(self.connect());
+        try!(stream.write(selector));
         try!(stream.write(b"\r\n"));
         let mut parser = try!(Parser::new(BufferedReader::new(stream)));
         parser.parse_menu()
+    }
+
+    fn connect(&self) -> IoResult<TcpStream> {
+        TcpStream::connect((self.host.as_slice(), self.port))
     }
 }

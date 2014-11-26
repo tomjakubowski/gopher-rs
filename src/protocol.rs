@@ -1,11 +1,10 @@
 #![allow(dead_code, unused_variables)]
 
-use std::fmt;
 use std::io::{Reader, IoResult};
 
 #[repr(u8)]
 #[deriving(Show, PartialEq, Eq, FromPrimitive)]
-pub enum KnownDirEntity {
+pub enum KnownEntityKind {
     File = b'0',
     Dir  = b'1',
     CsoQuery = b'2',
@@ -25,23 +24,23 @@ pub enum KnownDirEntity {
 }
 
 #[deriving(Show, PartialEq, Eq)]
-pub enum DirEntityKind {
-    Known(KnownDirEntity),
+pub enum EntityKind {
+    Known(KnownEntityKind),
     Unknown(u8)
 }
 
-impl DirEntityKind {
-    fn from_byte(byte: u8) -> DirEntityKind {
+impl EntityKind {
+    fn from_byte(byte: u8) -> EntityKind {
         match FromPrimitive::from_u8(byte) {
-            None => DirEntityKind::Unknown(byte),
-            Some(item) => DirEntityKind::Known(item)
+            None => EntityKind::Unknown(byte),
+            Some(item) => EntityKind::Known(item)
         }
     }
 }
 
 #[deriving(Show, PartialEq, Eq)]
 pub struct DirEntity {
-    pub kind: DirEntityKind,
+    pub kind: EntityKind,
     // FIXME: RFC 1436 allows (but does not recommend) Latin1 for this field, so
     // this should support that
     pub display: String,
@@ -49,6 +48,15 @@ pub struct DirEntity {
     pub selector: Vec<u8>,
     pub host: String,
     pub port: u16
+}
+
+impl DirEntity {
+    pub fn is_dir(&self) -> bool {
+        match self.kind {
+            EntityKind::Known(KnownEntityKind::Dir) => true,
+            _ => false
+        }
+    }
 }
 
 /// Parses the Gopher protocol.
@@ -60,10 +68,8 @@ pub struct Parser<'a> {
 
 // utility function to convert ASCII bytes to a String
 fn bytes_to_string(bytes: &[u8]) -> String {
-    // FIXME: don't panic
-    use std::ascii::{AsciiCast, AsciiStr};
-    let ascii = bytes.to_ascii();
-    ascii.as_str_ascii().into_string()
+    // FIXME: use latin1 or something
+    String::from_utf8_lossy(bytes).into_string()
 }
 
 impl<'a> Parser<'a> {
@@ -96,7 +102,7 @@ impl<'a> Parser<'a> {
             try!(self.bump());
         }
         Ok(DirEntity {
-            kind: DirEntityKind::from_byte(kind),
+            kind: EntityKind::from_byte(kind),
             display: display.into_string(),
             selector: selector,
             host: host.into_string(),
@@ -161,7 +167,7 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod test {
-    use super::{DirEntity, DirEntityKind, KnownDirEntity, Parser};
+    use super::{DirEntity, EntityKind, KnownEntityKind, Parser};
     use std::io::BufReader;
 
     fn fixture(bytes: &[u8]) -> Parser {
@@ -193,7 +199,7 @@ mod test {
         let mut parser = fixture(DATA);
 
         let item = DirEntity {
-            kind: DirEntityKind::Known(KnownDirEntity::File),
+            kind: EntityKind::Known(KnownEntityKind::File),
             display: "About internet Gopher".into_string(),
             selector: b"Stuff:About us".to_vec(),
             host: "rawBits.micro.umn.edu".into_string(),
@@ -202,7 +208,7 @@ mod test {
         assert_eq!(parser.parse_direntity(), Ok(item));
 
         let item = DirEntity {
-            kind: DirEntityKind::Known(KnownDirEntity::Dir),
+            kind: EntityKind::Known(KnownEntityKind::Dir),
             display: "Around University of Minnesota".into_string(),
             selector: b"Z,5692,AUM".to_vec(),
             host: "underdog.micro.umn.edu".into_string(),
@@ -219,7 +225,7 @@ mod test {
         assert_eq!(items.len(), 6);
 
         let item = DirEntity {
-            kind: DirEntityKind::Known(KnownDirEntity::File),
+            kind: EntityKind::Known(KnownEntityKind::File),
             display: "About internet Gopher".into_string(),
             selector: b"Stuff:About us".to_vec(),
             host: "rawBits.micro.umn.edu".into_string(),
@@ -228,7 +234,7 @@ mod test {
         assert_eq!(items[0], item);
 
         let item = DirEntity {
-            kind: DirEntityKind::Known(KnownDirEntity::Dir),
+            kind: EntityKind::Known(KnownEntityKind::Dir),
             display: "Around University of Minnesota".into_string(),
             selector: b"Z,5692,AUM".to_vec(),
             host: "underdog.micro.umn.edu".into_string(),
