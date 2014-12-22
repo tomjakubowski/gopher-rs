@@ -3,7 +3,7 @@
 use std::io::{Reader, IoResult};
 
 #[repr(u8)]
-#[deriving(Show, PartialEq, Eq, FromPrimitive)]
+#[deriving(Copy, Show, PartialEq, Eq, FromPrimitive)]
 pub enum KnownEntityKind {
     File = b'0',
     Dir  = b'1',
@@ -23,7 +23,7 @@ pub enum KnownEntityKind {
     Image = b'I'
 }
 
-#[deriving(Show, PartialEq, Eq)]
+#[deriving(Copy, Show, PartialEq, Eq)]
 pub enum EntityKind {
     Known(KnownEntityKind),
     Unknown(u8)
